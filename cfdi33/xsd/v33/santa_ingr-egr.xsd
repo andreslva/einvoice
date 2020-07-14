@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:Santander="http://www.santander.com.mx/schemas/xsd/addendaECB"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.santander.com.mx/schemas/xsd/addendaECB"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="addendaECB">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="EstadoDeCuentaBancario" minOccurs="0"
+					maxOccurs="1">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Movimientos" minOccurs="0"
+								maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="MovimientoECB" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute name="descripcion" type="xs:string"
+															use="required" />
+														<xs:attribute name="fecha" type="xs:dateTime"
+															use="required" />
+														<xs:attribute name="importe" type="xs:decimal"
+															use="required" />
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="nombreCliente" type="xs:string"
+							use="required" />
+						<xs:attribute name="numeroCuenta" type="xs:int" use="required" />
+						<xs:attribute name="periodo" type="xs:date" use="required" />
+						<xs:attribute name="version" type="xs:decimal" use="required" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

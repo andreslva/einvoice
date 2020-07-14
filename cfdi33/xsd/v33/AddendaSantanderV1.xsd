@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://www.santander.com.mx/schemas/xsd/AddendaSantanderV1" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.santander.com.mx/schemas/xsd/AddendaSantanderV1">
+	<xsd:annotation>
+		<xsd:documentation>Esquema para Addenda Santander v1, para uso de
+			proveedores externos e internos.</xsd:documentation>
+	</xsd:annotation>
+
+	<xsd:element name="AddendaSantanderV1" type="TAddendaSantanderV1">
+		<xsd:annotation>
+			<xsd:documentation>Elemento raíz para la Addenda de Santander V1
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="TAddendaSantanderV1">
+		<xsd:annotation>
+			<xsd:documentation>Tipo para elemento raíz.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="InformacionPago" type="TInformacionPago" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Elemento para Información de Pago.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="InformacionEmision" type="TInformacionEmision" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Elemento para Información de Emisión.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Inmuebles" type="TInmuebles" minOccurs="0" maxOccurs="1">
+			  <xsd:annotation>
+	   			<xsd:documentation>Tipo para Información de Inmuebles.</xsd:documentation>
+	 		  </xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Basilea" type="TBasilea" minOccurs="0" maxOccurs="1">
+			  <xsd:annotation>
+	   			<xsd:documentation>Estructura para la información de los campos de Basilea.</xsd:documentation>
+	 		  </xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CampoAdicional" type="TCampoAdicional" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Elementos para representar Campos Adicionales no
+						considerados en la Addenda Santander V1.
+    				</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+
+
+	</xsd:complexType>
+
+	<xsd:complexType name="TCampoAdicional">
+		<xsd:annotation>
+			<xsd:documentation>Tipo para campos adicionales.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="campo" use="required" type="TCampoValor">
+			<xsd:annotation>
+				<xsd:documentation>Nombre del campo adicional.</xsd:documentation>
+			</xsd:annotation>
+
+		</xsd:attribute>
+		<xsd:attribute name="valor" use="required" type="TCampoValor">
+			<xsd:annotation>
+				<xsd:documentation>Valor del campo adicional.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="TCampoValor">
+		<xsd:annotation>
+			<xsd:documentation>Tipo para representar nombre o valor de campos
+				adicionales</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:whiteSpace value="collapse"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:complexType name="TInformacionPago">
+		<xsd:annotation>
+			<xsd:documentation>Tipo para Información de Pago.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="numProveedor" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Número de Provedor.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="ordenCompra" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Número de Orden de Compra.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="posCompra" type="xsd:string">
+		<xsd:annotation><xsd:documentation>Posición del pedido</xsd:documentation></xsd:annotation></xsd:attribute>
+		<xsd:attribute name="nombreBeneficiario" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Nombre del beneficiario del pago.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="institucionReceptora" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Institución receptora del banco.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="numeroCuenta" type="TNumeroCuenta">
+			<xsd:annotation>
+				<xsd:documentation>Número de CLABE de la cuenta de recepción, o
+					número de cuenta si la institución es Santander.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="cuentaContable" type="TNumeroCuenta">
+			<xsd:annotation>
+				<xsd:documentation>Cuenta Contable del proveedor.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="claveDeposito" type="xsd:string"><xsd:annotation><xsd:documentation>Clave del depósito</xsd:documentation></xsd:annotation></xsd:attribute>
+		<xsd:attribute name="email" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Cuenta de correo electrónico para envío de
+					avisos.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	<xsd:attribute name="codigoISOMoneda" type="xsd:string"><xsd:annotation><xsd:documentation>Código de la moneda</xsd:documentation></xsd:annotation></xsd:attribute>
+	<xsd:attribute name="concepto" type="xsd:string"><xsd:annotation><xsd:documentation>Campo utilizado para recoger información de pago por tarjeta</xsd:documentation></xsd:annotation></xsd:attribute>
+	
+	
+	
+	</xsd:complexType>
+
+	<xsd:complexType name="TInformacionEmision">
+		<xsd:annotation>
+			<xsd:documentation>Tipo para Información de Emisión.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="InformacionFactoraje" type="TFactoraje" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="codigoCliente" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Código de cliente Santander.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="contrato" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identificador de Contrato.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="periodo" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Fecha de fin de periodo.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="centroCostos" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identificador del Centro de Costos.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="folioInterno" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Folio Interno del sistema externo que solicitó la
+					emisión del CFD</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="claveSantander" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Clave Santander para la entidad emisora.
+				</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="TNumeroCuenta">
+		<xsd:annotation>
+			<xsd:documentation>Tipo simple para números de cuenta o CLABE.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="18"/>
+			<xsd:whiteSpace value="collapse"/>
+			<xsd:pattern value="\d{1,18}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+    <xsd:complexType name="TFactoraje">
+        <xsd:annotation>
+        	<xsd:documentation>Tipo para representar información adicional de conceptos para Factoraje</xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence/>
+    	<xsd:attribute name="deudorProveedor" type="xsd:string" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Nombre del deudor o Proveedor según tipo de FACTURA</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="tipoDocumento" type="xsd:string" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Tipo de documento operado</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="numeroDocumento" type="xsd:string" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Numero de documento operado</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="fechaVencimiento" type="xsd:string" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Periodo de vencimiento (en interfase texto representado por "YYYY-MM-DD")</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="plazo" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Plazo del credito</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="valorNominal" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Valor nominal del documento</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="aforo" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Porcentaje de aforo</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="precioBase" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Precio base del documento</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="tasaDescuento" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Tasa de descuento del documento</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="precioFactoraje" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Precio del factoraje del documento</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    	<xsd:attribute name="importeDescuento" type="TDecimalFactoraje" use="optional">
+    		<xsd:annotation>
+    			<xsd:documentation>Importe del descuento o rendimiento</xsd:documentation>
+    		</xsd:annotation></xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:simpleType name="TDecimalFactoraje">
+        <xsd:annotation>
+        	<xsd:documentation>Tipo para limitar valores decimales en Factoraje</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:decimal">
+    		<xsd:whiteSpace value="collapse"/>
+    		<xsd:fractionDigits value="4"/>
+    		<xsd:totalDigits value="20"/>
+    	</xsd:restriction>
+    </xsd:simpleType>
+<xsd:complexType name="TInmuebles">
+     <xsd:annotation>
+	   <xsd:documentation>Tipo para Información de Inmuebles.</xsd:documentation>
+	 </xsd:annotation>
+	 <xsd:attribute name="fechaVencimiento" type="xsd:string">
+	<xsd:annotation>
+        	<xsd:documentation>Fecha de vencimiento del contrato del inmueble</xsd:documentation>
+        </xsd:annotation>
+	</xsd:attribute>
+	 <xsd:attribute name="numContrato" type="xsd:string">
+	 <xsd:annotation>
+        	<xsd:documentation>Número del contrato del inmueble</xsd:documentation>
+        </xsd:annotation>
+		</xsd:attribute>
+</xsd:complexType>
+
+
+<xsd:complexType name="TBasilea">
+     <xsd:annotation>
+	   <xsd:documentation>Estructura para los campos de Basilea.</xsd:documentation>
+	 </xsd:annotation>
+	 <xsd:attribute name="numContrato" type="xsd:string">
+	<xsd:annotation>
+        	<xsd:documentation>Número del contrato</xsd:documentation>
+        </xsd:annotation>
+	</xsd:attribute>
+	 <xsd:attribute name="OrigenGasto" type="xsd:string">
+	 <xsd:annotation>
+        	<xsd:documentation>Información del campo Origen Gasto</xsd:documentation>
+        </xsd:annotation>
+		</xsd:attribute>
+	 <xsd:attribute name="TipoGasto" type="xsd:string">
+	 <xsd:annotation>
+        	<xsd:documentation>Información del campo Tipo Gasto</xsd:documentation>
+        </xsd:annotation>
+		</xsd:attribute>
+
+</xsd:complexType>
+
+
+
+</xsd:schema>

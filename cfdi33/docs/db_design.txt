@@ -1,0 +1,165 @@
+
+		
+	32								22								
+00	version							version
+01	serie							serie
+02	folio							folio
+03	fecha							fecha
+04	sello							sello
+	-----							noAprobacion
+	-----							anoAprobacion	
+05	formaDePago						formaDePago
+06	noCertificado					noCertificado
+07	certificado						certificado
+08	condicionesDePago				condicionesDePago
+09	subTotal						subTotal
+10	descuento						descuento
+11	motivoDescuento					motivoDescuento
+12	TipoCambio						TipoCambio
+13	Moneda							Moneda
+14	total							total
+15	tipoDeComprobante				tipoDeComprobante
+16	metodoDePago					metodoDePago
+17	LugarExpedicion					LugarExpedicion
+18	NumCtaPago						NumCtaPago
+19	FolioFiscalOrig					FolioFiscalOrig
+20	SerieFolioFiscalOrig			-----
+21	FechaFolioFiscalOrig			FechaFolioFiscalOrig
+22	MontoFolioFiscalOrig			MontoFolioFiscalOrig
+
+23 uuid								uuid	ok
+
+A1	Emisor							Emisor
+	
+	<-
+	emisor_id 
+	* - 1
+	
+B2	Receptor						Receptor
+	
+	<-
+	receptor_id 
+	* - 1
+
+C3	Conceptos (iedu*)				Conceptos
+
+	->
+	id
+	* - *
+	
+D4	Impuestos						Impuestos
+	
+	->
+	id
+	1 - *
+	
+E5	Complemento						Complemento
+	(timbre*, nomina*, leyendas, etc)
+	
+	->
+	id
+	1 - *
+	
+F6	Addenda	(santander-ecb*)				Addenda
+	
+	->
+	id
+	1 - *
+	
+---- 
+ALL
+	impuestos
+	timbre
+
+*BANCO
+	movimientos - addenda (ecb)
+
+ISSUED
+	alumnos - conceptos (iedu)
+	nomina - complemento (nomina)
+
+RECEIVED
+	conceptos
+
+
+---- 
+
+The problem you are facing is caused by the mixed access modes in the same entity. If you want to mix the access mode you have to do the following steps:
+
+    1 Define the default access mode as follows:
+
+    @Entity
+    @Access(AccessType.FIELD)
+    public class UserDetails { ...}
+
+With this setting the default access mode is set to field access. If you don't do this and annotate fields as well as properties with the mapping annotations (such as @Column) the behaviour is not defined.
+
+    2 Now annotate the the getter method for property access explicitly (that is to tell the persistence provider that I have defined my default to be field access but in this case I want to use property access):
+
+    @Access(AccessType.PROPERTY)
+    @Column (name="USER_NAME")
+    public String getUserName() {
+        return userName+" from name getter";
+    }
+
+    3 And lastly, mark the corresponding field as transient using @Transient annotation so that the provider will not try to use the field as well as the property to persist the state:
+
+    @Transient private String userName;
+
+Note: If there is no valid reason to use mixed mode you should stick with either the field access mode or with the property access mode; don't use both modes in an entity because you want to write clean and understandable code! (my personal opinion)
+
+And one last comment on the following line in your code:
+
+@Entity (name="USER_DETAILS")
+
+In case you're using name attribute deliberately for naming the entity it might not be a problem; but if you are trying to map the entity to a table named USER_DETAILS this is not the right way; instead use the following:
+
+@Table(name = "USER_DETAILS")
+
+--------------------------------------
+
+Yes. You can map multiple tables to a single @Entity class using @MappedSuperclass annotation. By creating a super with this annotation & inheriting it's feature to all sub-classes with different tables in @Table annotation. But, in this case problem of normalization arises.
+
+OR
+
+You can use @SecondaryTable annotation which allows you to specify one or more secondary tables indicating that the data for the entity class is stored across multiple tables.
+
+For more information :
+
+    @MappedSuperclass - Java Doc Example http://www.thoughts-on-java.org/complete-guide-inheritance-strategies-jpa-hibernate/
+										 http://docs.oracle.com/javaee/5/api/javax/persistence/MappedSuperclass.html
+	Mapped Superclass		
+	Table per Class		@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+	Single Table		@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+	
+    @SecondaryTable - Java Doc Example
+    Tutorial - Map One POJO To Multiple Tables
+
+===========================
+
+http://www.xfront.com/ExtensibleContentModels.html
+
+In summary:
+
+We can put the <any> element specifically where we desire extensibility.
+If we desire extensibility at multiple locations, we can insert multiple <any> elements.
+With maxOccurs we can specify "how much" extensibility we will allow.
+
+Best Practice
+
+The <any> element is an enabling technology. It turns instance documents from static/rigid structures into rich, dynamic, flexible data objects. It shifts focus from the schema designer to the instance document author in terms of defining what data makes sense. It empowers instance document authors with the ability to decide what data makes sense to him/her.
+As a schema designer you need to recognize your limitations. You have no way of anticipating all the varieties of data that an instance document author might need in creating an instance document. Be smart enough to know that you're not smart enough to anticipate all possible needs! Design your schemas with flexibility built-in.
+
+Definition: an open content schema is one that allows instance documents to contain additional elements beyond what is declared in the schema. As we have seen, this may be achieved by using the <any> (and <anyAttribute>) element in the schema.
+
+<xsd:complexType name="BookType">
+   <xsd:sequence>
+       <xsd:element name="Title" type="xsd:string"/>
+       <xsd:element name="Author" type="xsd:string"/>
+       <xsd:element name="Date" type="xsd:gYear"/>
+       <xsd:element name="ISBN" type="xsd:string"/>
+       <xsd:element name="Publisher" type="xsd:string"/>
+       <xsd:any namespace="##any" minOccurs="0"/>
+   </xsd:sequence>
+</xsd:complexType>
+    

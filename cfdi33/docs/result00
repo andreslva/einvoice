@@ -1,0 +1,29 @@
+Analizando un esquema...
+[WARNING] El tipo simple "c_CodigoPostal" no se ha asignado a Enum debido al límite de EnumMemberSizeCap. Recuento de facetas: 95,777, límite actual: 256. Puede utilizar el atributo de personalización "typesafeEnumMaxMembers" para ampliar el límite.
+  línea 230 de http://www.sat.gob.mx/sitio_internet/cfd/catalogos/catCFDI.xsd
+
+[WARNING] El tipo simple "c_ClaveProdServ" no se ha asignado a Enum debido al límite de EnumMemberSizeCap. Recuento de facetas: 52,741, límite actual: 256. Puede utilizar el atributo de personalización "typesafeEnumMaxMembers" para ampliar el límite.
+  línea 96334 de http://www.sat.gob.mx/sitio_internet/cfd/catalogos/catCFDI.xsd
+
+[WARNING] El tipo simple "c_ClaveUnidad" no se ha asignado a Enum debido al límite de EnumMemberSizeCap. Recuento de facetas: 2,418, límite actual: 256. Puede utilizar el atributo de personalización "typesafeEnumMaxMembers" para ampliar el límite.
+  línea 149080 de http://www.sat.gob.mx/sitio_internet/cfd/catalogos/catCFDI.xsd
+
+[WARNING] El tipo simple "c_Colonia" no se ha asignado a Enum debido al límite de EnumMemberSizeCap. Recuento de facetas: 9,999, límite actual: 256. Puede utilizar el atributo de personalización "typesafeEnumMaxMembers" para ampliar el límite.
+  línea 151619 de http://www.sat.gob.mx/sitio_internet/cfd/catalogos/catCFDI.xsd
+
+[WARNING] El tipo simple "c_Municipio" no se ha asignado a Enum debido al límite de EnumMemberSizeCap. Recuento de facetas: 570, límite actual: 256. Puede utilizar el atributo de personalización "typesafeEnumMaxMembers" para ampliar el límite.
+  línea 161694 de http://www.sat.gob.mx/sitio_internet/cfd/catalogos/catCFDI.xsd
+
+Compilando un esquema...
+itr\cfdi\v33\AddendaECB.java
+itr\cfdi\v33\CEstado.java
+itr\cfdi\v33\CMetodoPago.java
+itr\cfdi\v33\CMoneda.java
+itr\cfdi\v33\CPais.java
+itr\cfdi\v33\CTipoDeComprobante.java
+itr\cfdi\v33\CTipoFactor.java
+itr\cfdi\v33\CUsoCFDI.java
+itr\cfdi\v33\Comprobante.java
+itr\cfdi\v33\EstadoDeCuentaBancario.java
+itr\cfdi\v33\ObjectFactory.java
+itr\cfdi\v33\TimbreFiscalDigital.java

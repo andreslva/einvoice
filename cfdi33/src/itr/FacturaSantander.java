@@ -1,0 +1,576 @@
+package itr;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.xml.bind.JAXBElement;
+import javax.xml.datatype.XMLGregorianCalendar;
+
+import itr.pdf.ITR_PDFHandler;
+import itr.sat.cfdi.v33.AddendaECB;
+import itr.sat.cfdi.v33.AddendaECB.EstadoDeCuentaBancario;
+import itr.sat.cfdi.v33.AddendaECB.EstadoDeCuentaBancario.Movimientos;
+import itr.sat.cfdi.v33.AddendaECB.EstadoDeCuentaBancario.Movimientos.MovimientoECB;
+import itr.sat.cfdi.v33.Comprobante.Addenda;
+import itr.sat.cfdi.v33.Comprobante.Conceptos.Concepto;
+import utils.ITR_Utils;
+
+public class FacturaSantander extends Factura_Total {
+
+	private static final String F00_Num			= "Num";
+	private static final String F10_Arch 		= "Archivo_xml";
+	private static final String F20_MesStr		= "Mes";
+	private static final String F30_MesInt		= "No_Mes";
+	private static final String F40_Fecha		= "Fecha";
+	private static final String F50_Desc		= "descripcion";
+	private static final String F60_importe		= "importe";
+	private static final String F70_dep_retiro	= "depo-ret";
+
+	private static final String file_dir		= ".\\prop\\";
+	private static final String file_deposito	= "std_deposito.txt";
+	private static final String file_retiro		= "std_retiro.txt";
+
+	private /*static final*/ CharSequence[] depositoSTRs 	= {
+			"ANUL O BONI DOMIC IVA COM",
+			"ANUL O BONI IVA COM",
+			"BONI DOMIC COM PAG",
+			"BONI COM CHEQUES PAGADOS",
+			"CAMBIO DINAMICO DE MONEDA",
+			"DEP ELECTRONICO",
+			"DEP PAG TARJ DE CRED",
+			"DEPOSITO",
+			"IVA POR COMISION MEM",
+			"REEMBOLSO OTRAS COMISIONES",
+			//"REEMBOLSO"
+	};
+	private /*static final*/ CharSequence[] retiroSTRs  	= {
+			"ANUL DEP PGO",
+			"CARGO",
+			"CGO",
+			"COM MEMBRESIA CUENTA E-PYME",
+			"DOMIC COM BAJA",
+			"DOMIC COM DEP",
+			"DOMIC COM USO",
+			"COMISION USO TOKEN",
+			"I.V.A. POR COMISION",
+			"DOMIC IVA POR COMISION",
+			"COMISION CHEQUES PAGADOS",
+			"PAGO",
+			"PGO"
+	};
+
+	public static final String deposito 	= "deposito";
+	public static final String retiro 		= "retiro";
+	public static final String undefined 	= "por_definir";
+
+	private float fontSize 	 = 8.0f;
+
+	private static final int typeUnDef		= -1;
+	private static final int typeDeposito 	= 0;
+	private static final int typeRetiro		= 1;
+	private /*static*/ int getConcepto(String desc)
+	{
+		int cpt = typeUnDef;
+		for(int i = 0; i < depositoSTRs.length; i++)
+		{
+			if(desc.contains(depositoSTRs[i]))
+			{
+				cpt = typeDeposito;
+				break;
+			}
+		}
+
+		for(int i = 0; i < retiroSTRs.length; i++)
+		{
+			if(desc.contains(retiroSTRs[i]))
+			{
+				cpt = typeRetiro;
+				break;
+			}
+		}
+
+		return cpt;
+	}
+
+	private static final String getConceptoStr(final int movType)
+	{
+		String s = null;
+		switch(movType)
+		{
+		case typeDeposito:
+			s = deposito;
+			break;
+		case typeRetiro:
+			s = retiro;
+			break;
+		default:
+			s = undefined;
+		}
+		return s;
+	}
+	
+	public FacturaSantander(int month) {
+		super();
+		setupDepositoRetiroDesc();
+		this.month = month;
+
+		switch(month)
+		{
+		case ENE01:
+		case FEB02:
+		case MAR03:
+		case ABR04:
+		case MAY05:
+		case JUN06:
+		case JUL07:
+		case AGO08:
+		case SEP09:
+		case OCT10:
+		case NOV11:
+		case DIC12:
+			break;
+		case ALLYEAR:
+			this.allmonths = new HashMap<Integer,Factura_Total>(13);
+			this.allmonths.put(new Integer(ENE01), new FacturaSantander(ENE01));
+			this.allmonths.put(new Integer(FEB02), new FacturaSantander(FEB02));
+			this.allmonths.put(new Integer(MAR03), new FacturaSantander(MAR03));
+			this.allmonths.put(new Integer(ABR04), new FacturaSantander(ABR04));
+			this.allmonths.put(new Integer(MAY05), new FacturaSantander(MAY05));
+			this.allmonths.put(new Integer(JUN06), new FacturaSantander(JUN06));
+			this.allmonths.put(new Integer(JUL07), new FacturaSantander(JUL07));
+			this.allmonths.put(new Integer(AGO08), new FacturaSantander(AGO08));
+			this.allmonths.put(new Integer(SEP09), new FacturaSantander(SEP09));
+			this.allmonths.put(new Integer(OCT10), new FacturaSantander(OCT10));
+			this.allmonths.put(new Integer(NOV11), new FacturaSantander(NOV11));
+			this.allmonths.put(new Integer(DIC12), new FacturaSantander(DIC12));
+			break;
+		default:
+		}
+	}
+
+	public FacturaSantander(String fileName, boolean withCSVFile) throws FileNotFoundException {
+		this(ALLYEAR);
+		//pdf
+		this.pdfH = new ITR_PDFHandler(fileName, fontSize);
+		this.pdfH.openDocument();
+
+		//cvs
+		setCreateCVSFile(withCSVFile);
+		if(createCVSFile())
+		{
+			StringBuffer cvsFullPath = new StringBuffer(this.pdfH.getRootPdfDir());
+			cvsFullPath.append(fileName);
+			cvsFullPath.append(".csv");
+			csvFile = new File(cvsFullPath.toString());
+			try
+			{
+				if ( csvFile.exists() )
+				{
+					StringBuffer cvs2 = new StringBuffer(this.pdfH.getRootPdfDir());
+					cvs2.append(fileName);
+					cvs2.append("_0");
+					cvs2.append(".csv");
+					csvFile = new File(cvs2.toString());
+				}
+
+				csvFile.createNewFile();
+			}catch(IOException io)
+			{
+				csvFile = null;
+			}
+
+			initCsvFileVars();
+		}
+
+		if(this.allmonths != null)
+		{
+			Iterator<Factura_Total> it = this.allmonths.values().iterator();
+			while(it.hasNext())
+			{
+				Factura_Total f = it.next();
+				f.setPdfH(this.pdfH);
+				f.setCreateCVSFile(withCSVFile);
+				f.setWriter(this.writer);
+			}
+		}
+
+	}
+
+	protected void setupDepositoRetiroDesc()
+	{
+		String path = null;
+		//if(depositoSTRs == null)
+		{
+			path = file_dir.concat(file_deposito);
+			try {
+				List<String> depositoDesc = ITR_Utils.readFileIntoList(path);
+				if(depositoDesc != null)
+				{
+					depositoSTRs = new CharSequence[depositoDesc.size()];
+					Iterator<String> it = depositoDesc.iterator();
+					int i = 0;
+					while(it.hasNext())
+					{
+						depositoSTRs[i++] = it.next();
+					}
+				}
+			} catch (IOException e) {
+				System.out.println("--->> RETIRO DESC, using defaults!!!!!!!!");
+			}
+		}
+
+		//if(retiroSTRs == null)
+		{
+			path = file_dir.concat(file_retiro);
+			try {
+				List<String> retiroDesc = ITR_Utils.readFileIntoList(path);
+				if(retiroDesc != null)
+				{
+					retiroSTRs = new CharSequence[retiroDesc.size()];
+					Iterator<String> it = retiroDesc.iterator();
+					int i = 0;
+					while(it.hasNext())
+					{
+						retiroSTRs[i++] = it.next();
+					}
+				}
+			} catch (IOException e) {
+				System.out.println("--->> DEPOSITO DESC, using defaults!!!!!!!!");			
+			}
+		}
+	}
+	
+	protected String toCVSFileHeader()
+	{
+		StringBuffer header = new StringBuffer();
+
+		header.append(F00_Num);
+		header.append(Sep);
+		header.append(F10_Arch);
+		header.append(Sep);
+		header.append(F20_MesStr);
+		header.append(Sep);
+		header.append(F30_MesInt);
+		header.append(Sep);
+		header.append(F40_Fecha);
+		header.append(Sep);
+		header.append(F50_Desc);
+		header.append(Sep);
+		header.append(F60_importe);
+		header.append(Sep);
+		header.append(F70_dep_retiro);
+		header.append("\n");
+
+		return header.toString();
+	}
+
+	public String toCVSFileData(int pos, ComprobanteGR compGR, String xmlFileName) 
+	{
+		itr.sat.cfdi.v33.Comprobante comprobante = compGR.getComprobante();
+		
+		itr.sat.cfdi.v33.Comprobante c = comprobante;//comprobante.getComprobante();
+		List<itr.sat.cfdi.v33.Comprobante.Addenda> listAddenda = c.getAddenda();
+		Iterator<itr.sat.cfdi.v33.Comprobante.Addenda> itAddenda = listAddenda.iterator();
+		AddendaECB addendaECB = null;
+		
+		while(itAddenda.hasNext())
+		{
+			itr.sat.cfdi.v33.Comprobante.Addenda addenda = itAddenda.next();
+			List<JAXBElement<Object>> listObjs = addenda.getEcbOrv1();
+			Iterator<JAXBElement<Object>> itObjs = listObjs.iterator(); 
+			while(itObjs.hasNext())
+			{
+				Object obj = itObjs.next();
+				if(obj instanceof itr.sat.cfdi.v33.AddendaECB)
+				{
+					addendaECB = (AddendaECB)obj;
+					break;
+				}
+
+			}
+		}
+
+		EstadoDeCuentaBancario edoCta = addendaECB.getEstadoDeCuentaBancario();
+		AddendaECB.EstadoDeCuentaBancario.Movimientos movs = edoCta.getMovimientos();
+		List<AddendaECB.EstadoDeCuentaBancario.Movimientos.MovimientoECB> listMovs = movs.getMovimientoECB();
+		
+		Iterator<MovimientoECB> itMov = listMovs.iterator();
+		StringBuffer r = new StringBuffer();
+		while(itMov.hasNext())
+		{
+			r.append(pos+Sep);							//num 00
+			//r.append(comprobante.getXmlFile()+Sep);	//xml_file 01
+			  r.append(xmlFileName+Sep);
+
+			MovimientoECB mov = itMov.next();
+
+			XMLGregorianCalendar fecha = mov.getFecha();
+			int mes = fecha.getMonth();
+			String mesStr = getCurrMonthStr(mes);
+			r.append(mesStr+Sep);						//mesStr 02
+			r.append(mes+Sep);							//mesInt 03
+			r.append(fecha.toString()+Sep);				//fecha 04
+
+			String desc = mov.getDescripcion();
+			r.append(desc+Sep);							//desc 05
+			BigDecimal importe = mov.getImporte();
+			r.append(importe+Sep);						//importe 06
+
+			int typeMov = getConcepto(desc);
+			String descStr = getConceptoStr(typeMov);
+			r.append(descStr+Sep);						//deposito-retiro 07
+			r.append("\n");
+		}
+		System.out.print(r.toString());
+		return r.toString();
+	}
+
+	private static final String padStr = ".";
+	private String toPDFFileData(ComprobanteGR compGR) 
+	{
+		itr.sat.cfdi.v33.Comprobante comprobante = compGR.getComprobante();
+		
+		//final String sep = "\n";
+		final float imptColWidth	= 60;
+		final float typeColWidth	= 70;
+		//final float descColWidth 	= 200;
+
+		itr.sat.cfdi.v33.Comprobante c = comprobante;//comprobante.getComprobante();
+		List<itr.sat.cfdi.v33.Comprobante.Addenda> listAddenda = c.getAddenda();
+		Iterator<itr.sat.cfdi.v33.Comprobante.Addenda> itAddenda = listAddenda.iterator();
+		AddendaECB addendaECB = null;
+		
+		ppl:
+		while(itAddenda.hasNext())
+		{
+			itr.sat.cfdi.v33.Comprobante.Addenda addenda = itAddenda.next();
+			List<JAXBElement<Object>> listObjs = addenda.getEcbOrv1();
+			Iterator<JAXBElement<Object>> itObjs = listObjs.iterator(); 
+			while(itObjs.hasNext())
+			{
+				Object obj = itObjs.next();
+				if(obj instanceof itr.sat.cfdi.v33.AddendaECB)
+				{
+					addendaECB = (AddendaECB)obj;
+					break ppl;
+				}
+
+			}
+		}
+
+		EstadoDeCuentaBancario edoCta = addendaECB.getEstadoDeCuentaBancario();
+		AddendaECB.EstadoDeCuentaBancario.Movimientos movs = edoCta.getMovimientos();
+		List<AddendaECB.EstadoDeCuentaBancario.Movimientos.MovimientoECB> listMovs = movs.getMovimientoECB();
+
+		
+		Collections.sort(listMovs, MovComparator);
+		
+		Iterator<MovimientoECB> itMov = listMovs.iterator();
+		StringBuffer r = new StringBuffer();
+		r.append("Movimientos");
+		r.append("\n");
+
+		int pos = 1;
+		int currDay = -1;
+		BigDecimal depTotal = new BigDecimal(0d);
+		BigDecimal retTotal = new BigDecimal(0d);
+		BigDecimal undefTotal = new BigDecimal(0d);
+		while(itMov.hasNext())
+		{
+			MovimientoECB mov = itMov.next();
+			XMLGregorianCalendar fecha = mov.getFecha();
+			int fY = fecha.getYear();
+			int fM = fecha.getMonth();
+			int fD = fecha.getDay();
+			StringBuffer f = new StringBuffer();
+			f.append(fY);
+			f.append("/");
+			f.append(pad2Dig(fM));
+			f.append("/");
+			f.append(pad2Dig(fD));
+
+			//dAY SEPARATOR
+			if(pos!=1 && currDay!=fD)
+			{
+				r.append("--------------------------------------------------------------------\n");
+			}
+			currDay = fD;
+
+			//num 00
+			String p = Integer.toString(pos);
+			p = pad2Dig(pos);
+			r.append(p);
+			r.append(getPdfH().getCOL00RightPaddedStr(" ", 15, padStr));
+
+			//fecha 04
+			r.append(f.toString());
+			r.append(getPdfH().getCOL00RightPaddedStr(" ", 20, padStr));
+			//importe 06
+			BigDecimal importe = mov.getImporte();
+			String importStr = getPdfH().getCOL00RightPaddedStr(importe.toPlainString(), imptColWidth, padStr);
+			r.append(importStr);
+			r.append("\t");
+			//deposito-retiro 07
+			int typeMov = getConcepto(mov.getDescripcion());
+			String type = getConceptoStr(typeMov);
+
+			switch(typeMov)
+			{
+			case typeDeposito:
+				depTotal = depTotal.add(importe); 
+				break;
+			case typeRetiro:
+				retTotal = retTotal.add(importe);
+				break;
+			default:
+				undefTotal = undefTotal.add(importe);
+			}
+
+			String typeStr = getPdfH().getCOL00RightPaddedStr(type, typeColWidth, padStr);
+			r.append(typeStr);
+			r.append("\t");
+			//desc 05
+			r.append(mov.getDescripcion());
+			r.append("\n");
+			pos++;
+		}
+		r.append("\n");
+
+		r.append(getPdfH().getCOL00RightPaddedStr("Total deposito: ", 100) + depTotal);
+		r.append("\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("Total retiros : ", 100) + retTotal);
+		r.append("\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("Total no def  : ", 100) + undefTotal);
+		r.append("\n");
+
+		BigDecimal ttl = depTotal.subtract(retTotal);
+		r.append(getPdfH().getCOL00RightPaddedStr("Total : ", 100) +  ttl);
+		r.append("\n");
+		
+		System.out.print(r.toString());
+		return r.toString();
+	}
+
+	private String pad2Dig(int pos) {
+		String p = Integer.toString(pos);
+		if(pos < 10)
+		{
+			p = "0".concat(p);
+		}
+		return p;
+	}
+
+	public String toPrintCompGR(int pos, ComprobanteGR compGR) 
+	{
+		itr.sat.cfdi.v33.Comprobante comprobante = compGR.getComprobante();
+		
+		StringBuffer r = new StringBuffer();
+
+		r.append(pos+" File Name = "+compGR.getXmlFile()+"\n");
+		/*if(comprobante.isCancelled()){
+			r.append(" ¡¡¡¡¡¡¡¡¡¡¡  CANCELADA !!!!!!!!!!!!!!! \n");
+		}*/
+
+		//begin
+		String  sFolio 		= comprobante.getFolio() != null ? comprobante.getFolio().trim() : NA;
+		String  sTipo 		= comprobante.getTipoDeComprobante() != null ? comprobante.getTipoDeComprobante().toString().trim() : NA;
+		String  sFormaPago 	= comprobante.getFormaPago() != null ? comprobante.getFormaPago().trim() : NA;
+		String  sMetPago 	= comprobante.getMetodoPago() != null ? comprobante.getMetodoPago().toString().trim() : NA;
+		String  sFecha 		= comprobante.getFecha() != null ? comprobante.getFecha().toString() : NA;
+		String  sEmisorNom 	= comprobante.getEmisor().getNombre() != null ? comprobante.getEmisor().getNombre().trim() : NA;
+		String  sEmisorRFC 	= comprobante.getEmisor().getRfc() != null ? comprobante.getEmisor().getRfc().trim() : NA;
+		String  sRecep 		= comprobante.getReceptor().getNombre() != null ? comprobante.getReceptor().getNombre().trim() : NA;
+		String  sRecepRFC	= comprobante.getReceptor().getRfc() != null ? comprobante.getReceptor().getRfc().trim() : NA;
+		//end
+
+		//new
+		r.append(getPdfH().getCOL00RightPaddedStr(" Folio: ")+sFolio+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Tipo: ")+sTipo+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" FormaDePago : ")+sFormaPago+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" MetodoDePago : ")+sMetPago+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Fecha : ")+sFecha+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Emisor : ")+sEmisorNom+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Emisor RFC: ")+sEmisorRFC+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Receptor : ")+sRecep+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr(" Receptor RFC : ")+sRecepRFC+"\n");
+
+		ArrayList<Concepto> conceptos = (ArrayList<Concepto>) comprobante.getConceptos().getConcepto();
+		if(conceptos.size() != 0)
+		{
+			r.append(getPdfH().getCOL00RightPaddedStr("Desc: ")+"\n");
+			Iterator<Concepto> it = conceptos.iterator();
+			Concepto c = null;
+
+			int i = 0;
+			while(it.hasNext())
+			{
+				c=it.next();
+				i++;
+				StringBuffer sb = new StringBuffer(" ");
+				sb.append(i);
+				sb.append(".- ");
+				sb.append(c.getDescripcion());
+				sb.append(", cant: ");
+				sb.append(c.getCantidad());
+				sb.append(", precio-unit: ");
+				sb.append(c.getValorUnitario());
+				sb.append(", importe: ");
+				sb.append(c.getImporte());
+				sb.trimToSize();
+				r.append(sb.toString()+"\n");
+			}
+		}
+
+		String movs = toPDFFileData(compGR);
+		r.append(movs);
+
+		/*r.append(getPdfH().getCOL00RightPaddedStr("SubTotal : ")+ comprobante.getSubTotal()+"\n");
+
+		r.append(getPdfH().getCOL00RightPaddedStr("TotalImpuestosRetenidos : ")+ comprobante.getTotalImpuestosRetenidos()+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("ISR retenido : ")+ comprobante.getIsrRet()+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("IVA retenido : ")+ comprobante.getIvaRet()+"\n");
+
+		r.append(getPdfH().getCOL00RightPaddedStr("TotalImpuestosTrasladados : ")+ comprobante.getTotalImpuestosTrasladados()+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("IEPS trasladado : ")+ comprobante.getIepsTras()+"\n");
+		r.append(getPdfH().getCOL00RightPaddedStr("IVA  trasladado : ")+ comprobante.getIvaTras()+"\n");*/
+
+		// ver en toPDFFileData: r.append(getPdfH().getCOL00RightPaddedStr("Total : ")+ compGR.getTotal()+"\n");
+
+		r.append("--------------------------------------------------------------------"+"\n");
+		//System.out.println(" comprobante.: "+ comprobante.);
+
+		return r.toString();
+	}
+
+	public static Comparator<MovimientoECB> MovComparator 
+	= new Comparator<MovimientoECB>() {
+
+		public int compare(MovimientoECB mov0, MovimientoECB mov1) {
+
+			XMLGregorianCalendar date1 = mov0.getFecha();
+			XMLGregorianCalendar date2 = mov1.getFecha();
+			int result = date1.toGregorianCalendar().compareTo(date2.toGregorianCalendar());
+			if(result == 0)
+			{
+				String desc1 = mov0.getDescripcion();
+				String desc2 = mov1.getDescripcion();
+				result = desc1.compareToIgnoreCase(desc2);
+			}
+			//ascending order
+			//return fruitName1.compareTo(fruitName2);
+
+			//descending order
+			//return fruitName2.compareTo(fruitName1);
+			return result;
+		}
+
+	};
+}
